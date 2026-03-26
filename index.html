@@ -225,6 +225,7 @@ function buildPdfRender(pdfData,inp,analysis,irrA,pair){
   }
   return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
 }
+const SEC=({title,children})=>React.createElement("div",{style:{marginBottom:14}},React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#94a3b8",letterSpacing:".12em",textTransform:"uppercase",marginBottom:10}},title),children);
 function App(){
   const[view,setView]=useState("analyze");
   const[inputs,setInputs]=useState(EMPTY);
@@ -262,8 +263,6 @@ function App(){
       [["analyze","Analyze"],["saved","Saved ("+saved.length+")"],["compare","Compare"],["pipeline","Pipeline ("+((window.KPS_PIPELINE||[]).filter(d=>!deletedIds.includes(d.id)&&(!incomeOnly||d.incomeData!==false)).length)+")"]].map(([v,l])=>React.createElement("button",{key:v,className:"nav-btn"+(view===v?" active":""),onClick:()=>setView(v)},l))
     )
   );
-
-  const SEC=({title,children})=>React.createElement("div",{style:{marginBottom:14}},React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#94a3b8",letterSpacing:".12em",textTransform:"uppercase",marginBottom:10}},title),children);
 
   let content=null;
   if(view==="analyze"){
