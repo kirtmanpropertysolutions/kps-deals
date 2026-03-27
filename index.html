@@ -39,7 +39,14 @@ input:focus,select:focus{border-color:#8B1A1A!important;box-shadow:0 0 0 3px rgb
 .deal-row{background:#fff;border:1px solid #e8ecf2;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px;transition:all .15s}
 .deal-row:hover{border-color:#8B1A1A;box-shadow:0 2px 8px rgba(139,26,26,0.06)}
 </style>
-<style media="print">*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}@page{margin:1.2cm 1.4cm;size:A4;}body>*{display:none!important;}#pdf-render{display:block!important;font-family:'Outfit',sans-serif;color:#1c1c2e;}</style></head>
+<style media="print">
+*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
+@page{margin:0;size:A4 portrait;}
+html,body{margin:0!important;padding:0!important;background:#fff!important;}
+body>*{display:none!important;}
+#pdf-render{display:block!important;}
+#pdf-render *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+</style></head>
 <body>
 <div id="root"></div>
 <script>
@@ -104,80 +111,54 @@ function buildPdfRender(pdfData,inp,analysis,irrA,pair){
   if(!pdfData)return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
   var today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
   var KR="#8B1A1A",KG="#C9A84C";
-  function Hdr(title){return React.createElement("div",{style:{background:KR,color:"#fff",padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22}},React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},React.createElement("div",{style:{background:KG,color:KR,width:30,height:30,borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,fontFamily:"'Libre Baskerville',serif"}},"KPS"),React.createElement("div",null,React.createElement("div",{style:{fontSize:8,opacity:.75,letterSpacing:".14em",textTransform:"uppercase",marginBottom:1}},"Kirtman Property Solutions"),React.createElement("div",{style:{fontSize:14,fontWeight:700,fontFamily:"'Libre Baskerville',serif"}},title))),React.createElement("div",{style:{fontSize:10,opacity:.8}},today));}
-  function Sec(title){return React.createElement("div",{style:{fontSize:9,fontWeight:700,color:KR,textTransform:"uppercase",letterSpacing:".12em",borderBottom:"2px solid "+KR,paddingBottom:3,marginBottom:8}},title);}
-  function MRow(label,val,even){return React.createElement("div",{style:{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid #f0f2f5",background:even?"#fafbfc":"transparent"}},React.createElement("span",{style:{fontSize:10,color:"#64748b"}},label),React.createElement("span",{style:{fontSize:10,fontWeight:600,fontFamily:"'DM Mono',monospace",color:"#1c1c2e"}},val||"—"));}
-  function stressCard(label,vacPct,sp){
-    if(!sp)return React.createElement("div",{style:{flex:1}});
-    var irr=parseFloat(sp.irr);
-    var bg=irr>10?"#f0fdf4":irr>=5?"#fffbeb":"#fef2f2";
-    var bdr=irr>10?"#86efac":irr>=5?"#fcd34d":"#fca5a5";
-    var tc=irr>10?"#166534":irr>=5?"#92400e":"#991b1b";
-    return React.createElement("div",{style:{flex:1,background:bg,border:"1px solid "+bdr,borderRadius:6,padding:"10px 12px"}},React.createElement("div",{style:{fontSize:9,fontWeight:700,color:tc,textTransform:"uppercase",letterSpacing:".08em",marginBottom:8}},label+" — "+vacPct+"% vac"),[["IRR",sp.irr+"%"],["Equity Multiple",sp.em+"x"],["Avg CoC",sp.avgCoc+"%"]].map(function(it){return React.createElement("div",{key:it[0],style:{display:"flex",justifyContent:"space-between",marginBottom:4}},React.createElement("span",{style:{fontSize:10,color:tc,opacity:.8}},it[0]),React.createElement("span",{style:{fontSize:11,fontWeight:700,fontFamily:"'DM Mono',monospace",color:tc}},it[1]));})
-    );
+
+  function fc(v){return v>=0?"$"+Math.round(v).toLocaleString():"($"+Math.round(Math.abs(v)).toLocaleString()+")";}
+  function numWin(av,bv){
+    var an=parseFloat(String(av).replace(/[^0-9.]/g,"")),bn=parseFloat(String(bv).replace(/[^0-9.]/g,""));
+    if(isNaN(an)||isNaN(bn))return null;
+    return an>bn?"a":bn>an?"b":null;
   }
   function stressTd(sp){
     var irr=sp?parseFloat(sp.irr):null;
     var tc=irr===null?"#94a3b8":irr>10?"#166534":irr>=5?"#92400e":"#991b1b";
-    return React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:tc}},sp?sp.irr+"%":"—");
+    return React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:tc}},sp?sp.irr+"%":"--");
   }
-  function numWin(av,bv){var an=parseFloat(String(av).replace(/[^0-9.\-]/g,"")),bn=parseFloat(String(bv).replace(/[^0-9.\-]/g,""));if(isNaN(an)||isNaN(bn))return null;return an>=bn?"a":"b";}
-  var Ftr=React.createElement("div",{style:{marginTop:20,paddingTop:10,borderTop:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",fontSize:9,color:"#94a3b8"}},React.createElement("span",null,"Kirtman Property Solutions · KPS Deal Co-Pilot"),React.createElement("span",null,"For investment analysis purposes only"));
-
-  if(pdfData.mode==="deal"){
-    var a2=pdfData.analysis,ipa=pdfData.inputs,ia=pdfData.irrA;
-    if(!a2||!ipa)return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
-    var price=parseFloat(ipa.purchasePrice)||0;
-    var dpPct=(parseFloat(ipa.downPaymentPct)||30)/100;
-    var rate=(parseFloat(ipa.interestRate)||6.5)/100;
-    var term2=parseInt(ipa.loanTermYrs)||30;
-    var dp2=price*dpPct,loan2=price-dp2;
-    var mr2=rate/12,np2=term2*12;
-    var mpi2=loan2>0?loan2*(mr2*Math.pow(1+mr2,np2))/(Math.pow(1+mr2,np2)-1):0;
-    var ads2=mpi2*12;
-    var ltv=price>0?Math.round(loan2/price*100):0;
-    var grm2=parseFloat(ipa.grossRentMonthly)||0,gra2=grm2*12;
-    var expR2=(parseFloat(ia.exp)||40)/100;
-    var beOcc=gra2>0&&expR2<1?Math.round(ads2/(gra2*(1-expR2))*100):null;
-    var proj2=calcProjection(ipa,ia);
-    var bull2=calcProjection(ipa,Object.assign({},ia,{vac:"3"}));
-    var base2=calcProjection(ipa,Object.assign({},ia,{vac:"5"}));
-    var bear2=calcProjection(ipa,Object.assign({},ia,{vac:"20"}));
-    return React.createElement("div",{id:"pdf-render",style:{fontSize:11,lineHeight:1.4}},
-      Hdr("Deal Analysis Report"),
-      React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,paddingBottom:14,borderBottom:"2px solid #e8ecf2"}},
-        React.createElement("div",null,
-          React.createElement("div",{style:{fontSize:8,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".1em",marginBottom:3}},a2.assetType),
-          React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:20,fontWeight:700,color:"#1c1c2e",marginBottom:4}},a2.dealName),
-          ipa.address&&React.createElement("div",{style:{fontSize:11,color:"#64748b"}},ipa.address)
-        ),
-        React.createElement("div",{style:{textAlign:"center",flexShrink:0,marginLeft:20}},
-          React.createElement("div",{style:{width:50,height:50,borderRadius:"50%",border:"3px solid "+KR,background:"#fdf5f5",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 4px"}},React.createElement("span",{style:{fontSize:19,fontWeight:800,color:KR,fontFamily:"'DM Mono',monospace"}},a2.score)),
-          React.createElement("div",{style:{fontSize:8,fontWeight:700,color:KR,textTransform:"uppercase",letterSpacing:".06em"}},a2.scoreVerdict)
-        )
-      ),
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:14}},
-        React.createElement("div",null,Sec("Property Overview"),MRow("Purchase Price",price>0?"$"+price.toLocaleString():"—",false),MRow("Units",ipa.units||"—",true),MRow("Asset Type",ipa.assetType||"—",false),MRow("Year Built",ipa.yearBuilt||"—",true),MRow("Down Payment","$"+Math.round(dp2).toLocaleString()+" ("+Math.round(dpPct*100)+"%)",false),MRow("Loan Amount","$"+Math.round(loan2).toLocaleString(),true),MRow("LTV",ltv+"%",false)),
-        React.createElement("div",null,Sec("Key Metrics"),MRow("Cap Rate",a2.keyMetrics["Cap Rate"],false),MRow("Est. NOI",a2.keyMetrics["Est. NOI"],true),MRow("Price / Unit",a2.keyMetrics["Price/Unit"],false),MRow("DSCR",a2.keyMetrics["DSCR"],true),MRow("CoC Return",a2.keyMetrics["CoC Return"],false),MRow("Annual Debt Svc",a2.keyMetrics["Annual Debt Svc"],true),beOcc!==null?MRow("Break-Even Occ",beOcc+"%",false):null)
-      ),
-      React.createElement("div",{style:{marginBottom:12}},Sec("Analyst Summary"),React.createElement("div",{style:{fontSize:11,color:"#374151",lineHeight:1.6,background:"#f8fafc",padding:"10px 12px",borderRadius:6,border:"1px solid #e2e8f0"}},a2.analystSummary)),
-      a2.neighborhoodScore&&React.createElement("div",{style:{marginBottom:12}},Sec("Neighborhood Employment"),React.createElement("div",{style:{display:"flex",alignItems:"center",gap:12,background:"#f8fafc",padding:"10px 12px",borderRadius:6,border:"1px solid #e2e8f0"}},React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:700,color:KR,flexShrink:0}},a2.neighborhoodScore+"/10"),React.createElement("div",{style:{fontSize:11,color:"#374151",lineHeight:1.5}},a2.neighborhoodNote||""))),
-      proj2&&React.createElement("div",{style:{marginBottom:12}},
-        Sec("7-Year IRR Projection"),
-        React.createElement("div",{style:{fontSize:9,color:"#94a3b8",marginBottom:8}},"Assumptions: "+ia.vac+"% vacancy · "+ia.exp+"% expenses · "+ia.rg+"% rent growth · "+ia.ec+"% exit cap · "+ia.hy+"-yr hold · "+Math.round(dpPct*100)+"% down · "+(parseFloat(ipa.interestRate)||6.5)+"% rate"),
-        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10}},[["7-Yr IRR",proj2.irr+"%"],["Equity Multiple",proj2.em+"x"],["Avg Cash-on-Cash",proj2.avgCoc+"%"]].map(function(it){return React.createElement("div",{key:it[0],style:{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:6,padding:"8px 10px",textAlign:"center"}},React.createElement("div",{style:{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".06em",marginBottom:3}},it[0]),React.createElement("div",{style:{fontSize:14,fontWeight:700,fontFamily:"'DM Mono',monospace",color:KR}},it[1]));})),
-        React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
-          React.createElement("thead",null,React.createElement("tr",{style:{background:"#f8fafc"}},["Year","Gross Rent","EGI","NOI","Debt Svc","Cash Flow","CoC %"].map(function(h){return React.createElement("th",{key:h,style:{padding:"5px 6px",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",textAlign:"right",borderBottom:"2px solid #e2e8f0",whiteSpace:"nowrap"}},h);}))),
-          React.createElement("tbody",null,proj2.rows.map(function(r,i){return React.createElement("tr",{key:r.y,style:{background:i%2===0?"#fafbfc":"transparent",borderBottom:"1px solid #f0f2f5"}},React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontWeight:700,color:"#1c1c2e"}},r.y),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace"}},"$"+r.gr.toLocaleString()),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace"}},"$"+r.egi.toLocaleString()),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace"}},"$"+r.noi.toLocaleString()),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:"#94a3b8"}},"$"+r.ads.toLocaleString()),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:700,color:r.cf>=0?"#166534":"#991b1b"}},(r.cf<0?"(":"")+"$"+Math.abs(r.cf).toLocaleString()+(r.cf<0?")":"")),React.createElement("td",{style:{padding:"5px 6px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:parseFloat(r.coc)>=8?"#166534":parseFloat(r.coc)>=5?"#92400e":"#991b1b"}},r.coc+"%"));}))
-        )
-      ),
-      React.createElement("div",{style:{marginBottom:12}},Sec("Vacancy Stress Test (7-Year IRR)"),React.createElement("div",{style:{display:"flex",gap:8}},stressCard("Bull",3,bull2),stressCard("Base",5,base2),stressCard("Bear",20,bear2))),
-      React.createElement("div",{style:{marginBottom:12}},Sec("Strategy"),React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}},React.createElement("div",null,React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#64748b",textTransform:"uppercase",marginBottom:4}},"Value-Add"),React.createElement("div",{style:{fontSize:10,color:"#374151",lineHeight:1.5}},String(a2.valueAdd||"").split("|").filter(function(s){return s.trim();}).join(" "))),React.createElement("div",null,React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#64748b",textTransform:"uppercase",marginBottom:4}},"Exit Strategy"),React.createElement("div",{style:{fontSize:10,color:"#374151",lineHeight:1.5}},String(a2.exitStrategy||""))))),
-      a2.redFlags&&a2.redFlags.length>0&&React.createElement("div",{style:{marginBottom:12}},Sec("Risk Flags"),a2.redFlags.map(function(f,i){return React.createElement("div",{key:i,style:{fontSize:10,color:"#7f1d1d",padding:"4px 8px",background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:4,marginBottom:4}},"⚠ "+f);})),
-      Ftr
+  function Sec2(t){
+    return React.createElement("div",{style:{fontSize:9,fontWeight:700,color:KR,textTransform:"uppercase",letterSpacing:".12em",marginBottom:8,paddingBottom:5,borderBottom:"1.5px solid "+KR}},t);
+  }
+  function MRow2(label,val,idx){
+    return React.createElement("div",{key:label,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:idx%2===0?"#fafbfc":"#fff",borderBottom:"1px solid #f0f2f5"}},
+      React.createElement("span",{style:{fontSize:10,color:"#64748b",fontWeight:500}},label),
+      React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:600,color:"#1c1c2e"}},String(val||"--"))
     );
   }
+  function PdfHdr(title,subtitle){
+    return React.createElement("div",{style:{background:KR,margin:0,padding:0}},
+      React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 28px"}},
+        React.createElement("div",{style:{display:"flex",alignItems:"center",gap:12}},
+          React.createElement("div",{style:{width:42,height:42,borderRadius:8,background:KR,border:"2px solid "+KG,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},
+            React.createElement("span",{style:{color:KG,fontWeight:800,fontSize:15,fontFamily:"'Libre Baskerville',serif",letterSpacing:"-.02em"}},"KPS")
+          ),
+          React.createElement("div",null,
+            React.createElement("div",{style:{fontSize:9,color:KG,letterSpacing:".14em",textTransform:"uppercase",fontWeight:600,marginBottom:2}},"Kirtman Property Solutions"),
+            React.createElement("div",{style:{fontSize:16,fontWeight:700,fontFamily:"'Libre Baskerville',serif",color:"#fff",lineHeight:1.1}},title)
+          )
+        ),
+        React.createElement("div",{style:{textAlign:"right"}},
+          React.createElement("div",{style:{fontSize:10,color:KG,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase"}},subtitle),
+          React.createElement("div",{style:{fontSize:11,color:"rgba(255,255,255,0.85)",marginTop:3}},today),
+          React.createElement("div",{style:{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:2,letterSpacing:".06em"}},"Confidential")
+        )
+      ),
+      React.createElement("div",{style:{height:5,background:KG}})
+    );
+  }
+  var Ftr=React.createElement("div",{style:{marginTop:24,paddingTop:12,borderTop:"2px solid #e8ecf2",display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9,color:"#94a3b8"}},
+    React.createElement("span",null,"Kirtman Property Solutions · KPS Deal Co-Pilot"),
+    React.createElement("span",null,"For investment analysis purposes only")
+  );
 
+  /* ── COMPARE mode ── */
   if(pdfData.mode==="compare"){
     var ca=pdfData.a,cb=pdfData.b,cw=pdfData.winner;
     if(!ca||!cb)return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
@@ -190,42 +171,320 @@ function buildPdfRender(pdfData,inp,analysis,irrA,pair){
     var bullB=calcProjection(cb.inputs||{},Object.assign({},defA,{vac:"3"}));
     var baseB=calcProjection(cb.inputs||{},defA);
     var bearB=calcProjection(cb.inputs||{},Object.assign({},defA,{vac:"20"}));
-    var cMetrics=[["Purchase Price","Purchase Price"],["Cap Rate","Cap Rate"],["Est. NOI","Est. NOI"],["Price / Unit","Price/Unit"],["DSCR","DSCR"],["CoC Return","CoC Return"],["Annual Debt Svc","Annual Debt Svc"],["Annual Cash Flow","Annual Cash Flow"]];
-    return React.createElement("div",{id:"pdf-render",style:{fontSize:11,lineHeight:1.4}},
-      Hdr("Deal Comparison Report"),
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}},[ca,cb].map(function(deal,idx){return React.createElement("div",{key:idx,style:{background:cw&&cw.id===deal.id?"#fdf5f5":"#f8fafc",border:"1px solid "+(cw&&cw.id===deal.id?KR:"#e2e8f0"),borderRadius:8,padding:"12px 14px",position:"relative"}},cw&&cw.id===deal.id&&React.createElement("div",{style:{position:"absolute",top:-10,left:12,background:KR,color:"#fff",fontSize:8,padding:"2px 8px",borderRadius:8,fontWeight:700,letterSpacing:".08em"}},"TOP PICK"),React.createElement("div",{style:{fontSize:8,color:"#94a3b8",textTransform:"uppercase",fontWeight:600,marginBottom:2}},deal.assetType),React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:14,fontWeight:700,color:"#1c1c2e",marginBottom:3}},deal.dealName),deal.inputs&&deal.inputs.address&&React.createElement("div",{style:{fontSize:10,color:"#64748b",marginBottom:6}},deal.inputs.address),React.createElement("div",{style:{display:"inline-flex",alignItems:"center",gap:8}},React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:16,fontWeight:800,color:KR}},deal.score),React.createElement("span",{style:{fontSize:8,fontWeight:700,color:KR,textTransform:"uppercase"}},deal.scoreVerdict)));})
-      ),
-      React.createElement("div",{style:{marginBottom:14}},
-        Sec("Key Metrics Comparison"),
-        React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
-          React.createElement("thead",null,React.createElement("tr",{style:{background:"#f8fafc"}},React.createElement("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0"}},"Metric"),React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},ca.dealName.slice(0,22)),React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},cb.dealName.slice(0,22)))),
-          React.createElement("tbody",null,cMetrics.map(function(m,i){var av=ca.keyMetrics&&ca.keyMetrics[m[1]]||"—",bv=cb.keyMetrics&&cb.keyMetrics[m[1]]||"—",w=numWin(av,bv);return React.createElement("tr",{key:m[0],style:{background:i%2===0?"#fafbfc":"transparent",borderBottom:"1px solid #f0f2f5"}},React.createElement("td",{style:{padding:"6px 8px",fontSize:10,color:"#64748b",fontWeight:500}},m[0]),React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="a"?700:500,color:w==="a"?"#166534":"#374151",background:w==="a"?"#f0fdf4":"transparent"}},av),React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="b"?700:500,color:w==="b"?"#166534":"#374151",background:w==="b"?"#f0fdf4":"transparent"}},bv));})
+    var cMetrics=[
+      ["Purchase Price","Purchase Price"],["Cap Rate","Cap Rate"],
+      ["Est. NOI","Est. NOI"],["Price / Unit","Price / Unit"],
+      ["Monthly Cash Flow","Monthly Cash Flow"],["Cash on Cash","Cash on Cash"],["DSCR","DSCR"]
+    ];
+    return React.createElement("div",{id:"pdf-render",style:{fontFamily:"'Outfit',sans-serif",fontSize:11,lineHeight:1.4,background:"#fff",color:"#1c1c2e"}},
+      PdfHdr("Deal Comparison Report","Comparison Summary"),
+      React.createElement("div",{style:{padding:"24px 28px"}},
+        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}},
+          [ca,cb].map(function(deal,idx){
+            var isWinner=cw&&cw.id===deal.id;
+            return React.createElement("div",{key:idx,style:{background:isWinner?"#fdf5f5":"#f8fafc",border:"2px solid "+(isWinner?KR:"#e2e8f0"),borderRadius:8,padding:"12px 14px",position:"relative"}},
+              isWinner&&React.createElement("div",{style:{position:"absolute",top:-10,left:12,background:KR,color:KG,fontSize:8,padding:"2px 8px",borderRadius:8,fontWeight:700,letterSpacing:".08em"}},"TOP PICK"),
+              React.createElement("div",{style:{fontSize:8,color:"#94a3b8",textTransform:"uppercase",fontWeight:600,marginBottom:2}},deal.assetType),
+              React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:14,fontWeight:700,color:"#1c1c2e",marginBottom:3}},deal.dealName),
+              deal.inputs&&deal.inputs.address&&React.createElement("div",{style:{fontSize:10,color:"#64748b",marginBottom:6}},deal.inputs.address),
+              React.createElement("div",{style:{display:"inline-flex",alignItems:"center",gap:8}},
+                React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:16,fontWeight:800,color:KR}},deal.score),
+                React.createElement("span",{style:{fontSize:8,fontWeight:700,color:KR,textTransform:"uppercase"}},deal.scoreVerdict)
+              )
+            );
+          })
+        ),
+        React.createElement("div",{style:{marginBottom:14}},
+          Sec2("Key Metrics Comparison"),
+          React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
+            React.createElement("thead",null,
+              React.createElement("tr",{style:{background:"#f8fafc"}},
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0"}},"Metric"),
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},ca.dealName.slice(0,22)),
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},cb.dealName.slice(0,22))
+              )
+            ),
+            React.createElement("tbody",null,
+              cMetrics.map(function(m,i){
+                var av=ca.keyMetrics&&ca.keyMetrics[m[1]]||"--",bv=cb.keyMetrics&&cb.keyMetrics[m[1]]||"--",w=numWin(av,bv);
+                return React.createElement("tr",{key:m[0],style:{background:i%2===0?"#fafbfc":"transparent",borderBottom:"1px solid #f0f2f5"}},
+                  React.createElement("td",{style:{padding:"6px 8px",fontSize:10,color:"#64748b",fontWeight:500}},m[0]),
+                  React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="a"?700:500,color:w==="a"?"#166534":"#374151",background:w==="a"?"#f0fdf4":"transparent"}},av),
+                  React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="b"?700:500,color:w==="b"?"#166534":"#374151",background:w==="b"?"#f0fdf4":"transparent"}},bv)
+                );
+              })
+            )
           )
-        )
-      ),
-      (projCA||projCB)&&React.createElement("div",{style:{marginBottom:14}},
-        Sec("7-Year IRR Comparison (5% vac · 40% exp · 3% growth · 6% exit cap)"),
-        React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
-          React.createElement("thead",null,React.createElement("tr",{style:{background:"#f8fafc"}},React.createElement("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0"}},"Metric"),React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},ca.dealName.slice(0,22)),React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},cb.dealName.slice(0,22)))),
-          React.createElement("tbody",null,[["7-Yr IRR",projCA&&projCA.irr+"%",projCB&&projCB.irr+"%"],["Equity Multiple",projCA&&projCA.em+"x",projCB&&projCB.em+"x"],["Avg Cash-on-Cash",projCA&&projCA.avgCoc+"%",projCB&&projCB.avgCoc+"%"]].map(function(row,i){var w=numWin(row[1],row[2]);return React.createElement("tr",{key:row[0],style:{background:i%2===0?"#fafbfc":"transparent",borderBottom:"1px solid #f0f2f5"}},React.createElement("td",{style:{padding:"6px 8px",fontSize:10,color:"#64748b",fontWeight:500}},row[0]),React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="a"?700:500,color:w==="a"?"#166534":"#374151",background:w==="a"?"#f0fdf4":"transparent"}},row[1]||"—"),React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="b"?700:500,color:w==="b"?"#166534":"#374151",background:w==="b"?"#f0fdf4":"transparent"}},row[2]||"—"));}))
-        )
-      ),
-      React.createElement("div",{style:{marginBottom:14}},
-        Sec("Vacancy Stress Test — 7-Year IRR"),
-        React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
-          React.createElement("thead",null,React.createElement("tr",{style:{background:"#f8fafc"}},["Deal","Bull (3% vac)","Base (5% vac)","Bear (20% vac)"].map(function(h,i){return React.createElement("th",{key:h,style:{padding:"6px 8px",textAlign:i===0?"left":"right",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0",whiteSpace:"nowrap"}},h);}))),
-          React.createElement("tbody",null,
-            React.createElement("tr",{style:{background:"#fafbfc",borderBottom:"1px solid #f0f2f5"}},React.createElement("td",{style:{padding:"6px 8px",fontSize:10,fontWeight:600,color:"#374151"}},ca.dealName.slice(0,24)),stressTd(bullA),stressTd(baseA),stressTd(bearA)),
-            React.createElement("tr",{style:{borderBottom:"1px solid #f0f2f5"}},React.createElement("td",{style:{padding:"6px 8px",fontSize:10,fontWeight:600,color:"#374151"}},cb.dealName.slice(0,24)),stressTd(bullB),stressTd(baseB),stressTd(bearB))
+        ),
+        (projCA||projCB)&&React.createElement("div",{style:{marginBottom:14}},
+          Sec2("7-Year IRR Comparison"),
+          React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
+            React.createElement("thead",null,
+              React.createElement("tr",{style:{background:"#f8fafc"}},
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"left",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0"}},"Metric"),
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},ca.dealName.slice(0,22)),
+                React.createElement("th",{style:{padding:"6px 8px",textAlign:"right",fontWeight:700,fontSize:9,color:"#1c1c2e",borderBottom:"2px solid #e2e8f0"}},cb.dealName.slice(0,22))
+              )
+            ),
+            React.createElement("tbody",null,
+              [
+                ["7-Yr IRR",projCA&&projCA.irr+"%",projCB&&projCB.irr+"%"],
+                ["Equity Multiple",projCA&&projCA.em+"x",projCB&&projCB.em+"x"],
+                ["Avg Cash-on-Cash",projCA&&projCA.avgCoc+"%",projCB&&projCB.avgCoc+"%"]
+              ].map(function(row,i){
+                var w=numWin(row[1],row[2]);
+                return React.createElement("tr",{key:row[0],style:{background:i%2===0?"#fafbfc":"transparent",borderBottom:"1px solid #f0f2f5"}},
+                  React.createElement("td",{style:{padding:"6px 8px",fontSize:10,color:"#64748b",fontWeight:500}},row[0]),
+                  React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="a"?700:500,color:w==="a"?"#166534":"#374151",background:w==="a"?"#f0fdf4":"transparent"}},row[1]||"--"),
+                  React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:w==="b"?700:500,color:w==="b"?"#166534":"#374151",background:w==="b"?"#f0fdf4":"transparent"}},row[2]||"--")
+                );
+              })
+            )
           )
-        )
-      ),
-      cw&&React.createElement("div",{style:{background:"#fdf5f5",border:"2px solid "+KR,borderRadius:8,padding:"14px 16px",marginBottom:14}},React.createElement("div",{style:{fontSize:9,fontWeight:700,color:KR,textTransform:"uppercase",letterSpacing:".12em",marginBottom:5}},"KPS Recommendation"),React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:16,fontWeight:700,color:KR}},cw.dealName)),
-      Ftr
+        ),
+        React.createElement("div",{style:{marginBottom:14}},
+          Sec2("Vacancy Stress Test -- 7-Year IRR"),
+          React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
+            React.createElement("thead",null,
+              React.createElement("tr",{style:{background:"#f8fafc"}},
+                ["Deal","Bull (3% vac)","Base (5% vac)","Bear (20% vac)"].map(function(h,i){
+                  return React.createElement("th",{key:h,style:{padding:"6px 8px",textAlign:i===0?"left":"right",fontWeight:600,fontSize:9,color:"#64748b",textTransform:"uppercase",borderBottom:"2px solid #e2e8f0",whiteSpace:"nowrap"}},h);
+                })
+              )
+            ),
+            React.createElement("tbody",null,
+              React.createElement("tr",{style:{background:"#fafbfc",borderBottom:"1px solid #f0f2f5"}},
+                React.createElement("td",{style:{padding:"6px 8px",fontSize:10,fontWeight:600,color:"#374151"}},ca.dealName.slice(0,24)),
+                stressTd(bullA),stressTd(baseA),stressTd(bearA)
+              ),
+              React.createElement("tr",{style:{borderBottom:"1px solid #f0f2f5"}},
+                React.createElement("td",{style:{padding:"6px 8px",fontSize:10,fontWeight:600,color:"#374151"}},cb.dealName.slice(0,24)),
+                stressTd(bullB),stressTd(baseB),stressTd(bearB)
+              )
+            )
+          )
+        ),
+        cw&&React.createElement("div",{style:{background:"#fdf5f5",border:"2px solid "+KR,borderRadius:8,padding:"14px 16px",marginBottom:14}},
+          React.createElement("div",{style:{fontSize:9,fontWeight:700,color:KR,textTransform:"uppercase",letterSpacing:".12em",marginBottom:5}},"KPS Recommendation"),
+          React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:16,fontWeight:700,color:KR}},cw.dealName)
+        ),
+        Ftr
+      )
     );
   }
+
+  /* ── DEAL mode ── */
+  if(pdfData.mode==="deal"){
+    var a2=pdfData.analysis,ipa=pdfData.inputs,ia=pdfData.irrA||{vac:"5",exp:"40",rg:"3",ec:"6",hy:"7"};
+    if(!a2||!ipa)return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
+    var price=parseFloat(ipa.purchasePrice)||0;
+    var dpPct=(parseFloat(ipa.downPaymentPct)||30)/100;
+    var rate=(parseFloat(ipa.interestRate)||6.5)/100;
+    var term2=parseInt(ipa.loanTermYrs)||30;
+    var dp2=price*dpPct,loan2=price-dp2;
+    var mr2=rate/12,np2=term2*12;
+    var mpi2=loan2>0?loan2*(mr2*Math.pow(1+mr2,np2))/(Math.pow(1+mr2,np2)-1):0;
+    var ads2=mpi2*12;
+    var grm2=parseFloat(ipa.grossRentMonthly)||0,gra2=grm2*12;
+    var vacR2=(parseFloat(ia.vac)||5)/100;
+    var expR2=(parseFloat(ia.exp)||40)/100;
+    var egi2=gra2*(1-vacR2);
+    var noiRaw=parseFloat(ipa.noi)||0;
+    var noi2=noiRaw>0?noiRaw:egi2*(1-expR2);
+    var cf2m=(noi2-ads2)/12;
+    var coc2=dp2>0?((noi2-ads2)/dp2)*100:0;
+    var dscr2=ads2>0?noi2/ads2:0;
+    var u2=parseInt(ipa.units)||1;
+    var ppu2=u2>0&&price>0?price/u2:0;
+    var proj2=calcProjection(ipa,ia);
+    var bull2=calcProjection(ipa,Object.assign({},ia,{vac:"3"}));
+    var base2=calcProjection(ipa,Object.assign({},ia,{vac:"5"}));
+    var bear2=calcProjection(ipa,Object.assign({},ia,{vac:"20"}));
+    var nScore=a2.neighborhoodScore;
+    var nNote=a2.neighborhoodNote;
+    var verdict=a2.scoreVerdict||a2.verdict||"";
+    var vBg=verdict==="HOT"?"#8B1A1A":verdict==="WATCH"?"#92400e":"#374151";
+    var oppVal=a2.keyMetrics&&a2.keyMetrics["Down with OPP"];
+
+    return React.createElement("div",{id:"pdf-render",style:{fontFamily:"'Outfit',sans-serif",color:"#1c1c2e",background:"#fff",maxWidth:"210mm",margin:"0 auto"}},
+      PdfHdr("Deal Co-Pilot","Investment Summary"),
+
+      React.createElement("div",{style:{padding:"24px 28px 32px"}},
+
+        /* 1. Deal name + badge + address */
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,paddingBottom:16,borderBottom:"1px solid #e8ecf2"}},
+          React.createElement("div",{style:{flex:1}},
+            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:4}},
+              React.createElement("div",{style:{fontFamily:"'Libre Baskerville',serif",fontSize:20,fontWeight:700,color:"#1c1c2e",lineHeight:1.2}},a2.dealName||ipa.dealName||"Deal Analysis"),
+              verdict?React.createElement("div",{style:{background:vBg,color:KG,fontSize:9,fontWeight:800,padding:"3px 10px",borderRadius:4,letterSpacing:".1em",textTransform:"uppercase",flexShrink:0}},verdict):null
+            ),
+            ipa.address?React.createElement("div",{style:{fontSize:12,color:"#64748b",marginTop:2}},ipa.address):null,
+            ipa.assetType?React.createElement("div",{style:{fontSize:10,color:"#94a3b8",marginTop:3,textTransform:"uppercase",letterSpacing:".08em",fontWeight:600}},ipa.assetType):null
+          )
+        ),
+
+        /* 2. 4 metric cards */
+        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}},
+          React.createElement("div",{style:{background:"#fdf5f5",border:"1px solid #f5d0d0",borderRadius:8,padding:"12px 14px",textAlign:"center"}},
+            React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}},"Purchase Price"),
+            React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:"#1c1c2e",lineHeight:1}},price>0?"$"+price.toLocaleString():"--")
+          ),
+          React.createElement("div",{style:{background:"#fdf5f5",border:"1px solid #f5d0d0",borderRadius:8,padding:"12px 14px",textAlign:"center"}},
+            React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}},"Cap Rate"),
+            React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:KG,lineHeight:1}},a2.keyMetrics&&a2.keyMetrics["Cap Rate"]||a2.capRate||"--")
+          ),
+          React.createElement("div",{style:{background:"#fdf5f5",border:"1px solid #f5d0d0",borderRadius:8,padding:"12px 14px",textAlign:"center"}},
+            React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}},"7-Year IRR"),
+            React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:"#166534",lineHeight:1}},proj2?proj2.irr+"%":"--")
+          ),
+          React.createElement("div",{style:{background:"#fdf5f5",border:"1px solid #f5d0d0",borderRadius:8,padding:"12px 14px",textAlign:"center"}},
+            React.createElement("div",{style:{fontSize:9,fontWeight:600,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}},"KPS Score"),
+            React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:KR,lineHeight:1}},a2.score+"/10")
+          )
+        ),
+
+        /* 3. Two-column table */
+        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}},
+          React.createElement("div",null,
+            Sec2("Property Overview"),
+            React.createElement("div",{style:{border:"1px solid #e8ecf2",borderRadius:6,overflow:"hidden"}},
+              MRow2("Units",u2>0?u2:"--",0),
+              MRow2("Year Built",ipa.yearBuilt||a2.year_built||"--",1),
+              MRow2("Price / Unit",ppu2>0?"$"+Math.round(ppu2).toLocaleString():"--",2),
+              MRow2("Gross Rent / Mo",grm2>0?"$"+grm2.toLocaleString():"--",3),
+              MRow2("Est. Annual NOI",noi2>0?fc(noi2):"--",4)
+            )
+          ),
+          React.createElement("div",null,
+            Sec2("Financing & Returns"),
+            React.createElement("div",{style:{border:"1px solid #e8ecf2",borderRadius:6,overflow:"hidden"}},
+              MRow2("Down Payment",dp2>0?"$"+Math.round(dp2).toLocaleString()+" ("+Math.round(dpPct*100)+"%)":"--",0),
+              MRow2("Loan Amount",loan2>0?"$"+Math.round(loan2).toLocaleString():"--",1),
+              MRow2("Interest Rate",(parseFloat(ipa.interestRate)||6.5)+"%",2),
+              MRow2("Monthly Cash Flow",price>0?fc(cf2m):"--",3),
+              MRow2("Cash-on-Cash",dp2>0?coc2.toFixed(1)+"%":"--",4),
+              MRow2("DSCR",ads2>0?dscr2.toFixed(2)+"x":"--",5)
+            )
+          )
+        ),
+
+        /* 4. 7-yr projection */
+        proj2?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("7-Year Cash Flow Projection"),
+          React.createElement("div",{style:{fontSize:9,color:"#94a3b8",marginBottom:8}},"Assumptions: "+ia.vac+"% vacancy · "+ia.exp+"% expenses · "+ia.rg+"% rent growth · "+ia.ec+"% exit cap · "+ia.hy+"-yr hold"),
+          React.createElement("div",{style:{border:"1px solid #e8ecf2",borderRadius:6,overflow:"hidden"}},
+            React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:10}},
+              React.createElement("thead",null,
+                React.createElement("tr",{style:{background:"#1c1c2e"}},
+                  ["Year","Gross Rent","EGI","NOI","Debt Svc","Cash Flow","CoC %"].map(function(h){
+                    return React.createElement("th",{key:h,style:{padding:"7px 8px",fontWeight:600,fontSize:9,color:"#fff",textTransform:"uppercase",textAlign:"right",whiteSpace:"nowrap",letterSpacing:".04em"}},h);
+                  })
+                )
+              ),
+              React.createElement("tbody",null,
+                proj2.rows.map(function(r,i){
+                  var cfPos=r.cf>=0;
+                  return React.createElement("tr",{key:r.y,style:{background:i%2===0?"#fafbfc":"#fff",borderBottom:"1px solid #f0f2f5"}},
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:700,color:"#1c1c2e"}},r.y),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:"#374151"}},"$"+r.gr.toLocaleString()),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:"#374151"}},"$"+r.egi.toLocaleString()),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:"#374151"}},"$"+r.noi.toLocaleString()),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",color:"#94a3b8"}},"$"+r.ads.toLocaleString()),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:700,color:cfPos?"#166534":"#991b1b"}},(r.cf<0?"(":"")+"$"+Math.abs(r.cf).toLocaleString()+(r.cf<0?")":"")),
+                    React.createElement("td",{style:{padding:"6px 8px",textAlign:"right",fontFamily:"'DM Mono',monospace",fontWeight:600,color:parseFloat(r.coc)>=8?"#166534":parseFloat(r.coc)>=5?"#92400e":"#991b1b"}},r.coc+"%")
+                  );
+                })
+              )
+            )
+          ),
+          React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:8}},
+            [["7-Yr IRR",proj2.irr+"%"],["Equity Multiple",proj2.em+"x"],["Avg Cash-on-Cash",proj2.avgCoc+"%"]].map(function(it){
+              return React.createElement("div",{key:it[0],style:{background:"#1c1c2e",borderRadius:6,padding:"9px 12px",textAlign:"center"}},
+                React.createElement("div",{style:{fontSize:9,color:"#94a3b8",textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}},it[0]),
+                React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:15,fontWeight:800,color:KG}},it[1])
+              );
+            })
+          )
+        ):null,
+
+        /* 5. Stress scenarios */
+        (bull2||base2||bear2)?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("Vacancy Stress Test -- 7-Year IRR"),
+          React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}},
+            [
+              ["Bull",3,bull2,"#166534","#86efac","#f0fdf4"],
+              ["Base",5,base2,"#92400e","#fcd34d","#fffbeb"],
+              ["Bear",20,bear2,"#991b1b","#fca5a5","#fef2f2"]
+            ].map(function(sc){
+              var label=sc[0],vacPct=sc[1],sp=sc[2],tc=sc[3],bdr=sc[4],bg=sc[5];
+              if(!sp)return React.createElement("div",{key:label});
+              return React.createElement("div",{key:label,style:{background:bg,border:"1px solid "+bdr,borderRadius:8,padding:"12px 14px"}},
+                React.createElement("div",{style:{fontSize:10,fontWeight:700,color:tc,textTransform:"uppercase",letterSpacing:".08em",marginBottom:8}},label+" -- "+vacPct+"% vacancy"),
+                [["IRR",sp.irr+"%"],["Equity Multiple",sp.em+"x"],["Avg CoC",sp.avgCoc+"%"]].map(function(it){
+                  return React.createElement("div",{key:it[0],style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}},
+                    React.createElement("span",{style:{fontSize:10,color:tc,opacity:.8}},it[0]),
+                    React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700,color:tc}},it[1])
+                  );
+                })
+              );
+            })
+          )
+        ):null,
+
+        /* 6. Neighborhood */
+        nScore?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("Neighborhood Employment Score"),
+          React.createElement("div",{style:{display:"flex",alignItems:"center",gap:16,background:"#f8fafc",border:"1px solid #e8ecf2",borderRadius:8,padding:"14px 16px"}},
+            React.createElement("div",{style:{width:56,height:56,borderRadius:"50%",border:"3px solid "+KR,background:"#fdf5f5",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},
+              React.createElement("span",{style:{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:KR}},nScore+"/10")
+            ),
+            React.createElement("div",{style:{fontSize:11,color:"#374151",lineHeight:1.6}},nNote||"")
+          )
+        ):null,
+
+        /* 7. Down with OPP */
+        oppVal?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("Down with OPP -- Max Purchase Price"),
+          React.createElement("div",{style:{borderLeft:"4px solid "+KR,background:"#fdf5f5",borderRadius:"0 8px 8px 0",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+            React.createElement("div",null,
+              React.createElement("div",{style:{fontSize:10,color:"#64748b",marginBottom:4}},"Maximum price to achieve KPS score >= 7.2"),
+              React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:20,fontWeight:800,color:KR}},oppVal)
+            ),
+            price>0?React.createElement("div",{style:{textAlign:"right"}},
+              React.createElement("div",{style:{fontSize:9,color:"#94a3b8",marginBottom:3}},"vs. Ask Price"),
+              React.createElement("div",{style:{fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700,color:"#7c3aed"}},"$"+price.toLocaleString())
+            ):null
+          )
+        ):null,
+
+        /* 8. Analyst summary */
+        a2.analystSummary?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("Analyst Summary"),
+          React.createElement("div",{style:{background:"#1c1c2e",borderRadius:8,padding:"14px 16px"}},
+            React.createElement("div",{style:{fontSize:9,fontWeight:700,color:KG,textTransform:"uppercase",letterSpacing:".12em",marginBottom:8}},"KPS Analysis"),
+            React.createElement("div",{style:{fontSize:11,color:"#cbd5e1",lineHeight:1.7}},a2.analystSummary)
+          )
+        ):null,
+
+        /* red flags */
+        a2.redFlags&&a2.redFlags.length>0?React.createElement("div",{style:{marginBottom:20}},
+          Sec2("Risk Flags"),
+          a2.redFlags.map(function(f,i){
+            return React.createElement("div",{key:i,style:{fontSize:10,color:"#7f1d1d",padding:"5px 10px",background:"#fef2f2",border:"1px solid #fca5a5",borderRadius:5,marginBottom:5,display:"flex",alignItems:"center",gap:6}},
+              React.createElement("span",{style:{color:"#991b1b",fontWeight:700}},"!"),
+              f
+            );
+          })
+        ):null,
+
+        Ftr
+      )
+    );
+  }
+
   return React.createElement("div",{id:"pdf-render",style:{display:"none"}});
 }
+
 const SEC=({title,children})=>React.createElement("div",{style:{marginBottom:14}},React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#94a3b8",letterSpacing:".12em",textTransform:"uppercase",marginBottom:10}},title),children);
 function App(){
   const[view,setView]=useState("analyze");
