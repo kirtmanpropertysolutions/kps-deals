@@ -39,14 +39,7 @@ input:focus,select:focus{border-color:#8B1A1A!important;box-shadow:0 0 0 3px rgb
 .deal-row{background:#fff;border:1px solid #e8ecf2;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px;transition:all .15s}
 .deal-row:hover{border-color:#8B1A1A;box-shadow:0 2px 8px rgba(139,26,26,0.06)}
 </style>
-<style media="print">
-*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}
-@page{margin:0;size:A4 portrait;}
-html,body{margin:0!important;padding:0!important;}
-body *{visibility:hidden!important;}
-#pdf-render,#pdf-render *{visibility:visible!important;}
-#pdf-render{position:absolute!important;left:0!important;top:0!important;width:100%!important;background:#fff!important;z-index:9999!important;overflow:visible!important;}
-</style></head>
+</head>
 <body>
 <div id="root"></div>
 <script>
@@ -517,6 +510,37 @@ function buildPdfRender(pdfData,inp,analysis,irrA,pair,aiNarrative,aiLoading){
   return React.createElement("div",{id:"pdf-render",style:{display:"block"}});
 }
 
+
+function printPdfWindow(pdfData,inp,analysis,irrA,pair,aiNarrative){
+  // Render the React element tree to a temp div to capture HTML
+  var el=buildPdfRender(pdfData,inp,analysis,irrA,pair,aiNarrative,false);
+  var tmp=document.createElement('div');
+  document.body.appendChild(tmp);
+  ReactDOM.render(el,tmp);
+  var bodyHtml=tmp.innerHTML;
+  document.body.removeChild(tmp);
+
+  var win=window.open('','_blank','width=960,height=800');
+  if(!win){alert('Allow popups for this site to enable PDF printing.');return;}
+  var doc='<!DOCTYPE html><html><head>'
+    +'<meta charset="UTF-8">'
+    +'<title>KPS Deal Report</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}'
+    +'body{font-family:\'Outfit\',sans-serif;background:#fff;color:#1c1c2e;}'
+    +'table{border-collapse:collapse;}'
+    +'@page{margin:0;size:A4 portrait;}'
+    +'@media print{html,body{margin:0!important;padding:0!important;}}'
+    +'</style>'
+    +'</head><body>'
+    +bodyHtml
+    +'</body></html>';
+  win.document.write(doc);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){win.print();},1000);
+}
 const SEC=({title,children})=>React.createElement("div",{style:{marginBottom:14}},React.createElement("div",{style:{fontSize:10,fontWeight:700,color:"#94a3b8",letterSpacing:".12em",textTransform:"uppercase",marginBottom:10}},title),children);
 function App(){
   const[view,setView]=useState("analyze");
@@ -734,7 +758,7 @@ Be specific and use the actual numbers provided. Write in a confident, professio
     )
   );})():null;
 
-  const pdfModal=pdfData?(()=>{var rc=buildPdfRender(pdfData,inputs,analysis,irrA,pair,aiNarrative,aiLoading);return React.createElement("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",zIndex:2000,overflowY:"auto"}},React.createElement("div",{style:{background:"#1c1c2e",padding:"10px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:1,boxShadow:"0 2px 8px rgba(0,0,0,0.4)"}},React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},React.createElement("div",{style:{width:28,height:28,borderRadius:5,background:"#8B1A1A",border:"1.5px solid #C9A84C",display:"flex",alignItems:"center",justifyContent:"center"}},React.createElement("span",{style:{color:"#C9A84C",fontWeight:800,fontSize:10,fontFamily:"'Libre Baskerville',serif"}},"KPS")),React.createElement("span",{style:{color:"#fff",fontWeight:600,fontSize:13,fontFamily:"'Libre Baskerville',serif"}},"Deal Report Preview")),React.createElement("div",{style:{display:"flex",gap:10}},React.createElement("button",{onClick:()=>window.print(),style:{padding:"8px 22px",background:"#8B1A1A",border:"2px solid #C9A84C",borderRadius:6,color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer"}},"Print / Save PDF"),React.createElement("button",{onClick:()=>setPdfData(null),style:{padding:"8px 16px",background:"transparent",border:"1px solid #4b5563",borderRadius:6,color:"#9ca3af",fontSize:13,fontWeight:600,cursor:"pointer"}},"Close"))),React.createElement("div",{style:{maxWidth:"210mm",margin:"24px auto",background:"#fff",boxShadow:"0 8px 40px rgba(0,0,0,0.4)"}},rc));})():null;  return React.createElement("div",{style:{minHeight:"100vh",background:"#f0f2f5"}},
+  const pdfModal=pdfData?(()=>{var rc=buildPdfRender(pdfData,inputs,analysis,irrA,pair,aiNarrative,aiLoading);return React.createElement("div",{style:{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",zIndex:2000,overflowY:"auto"}},React.createElement("div",{style:{background:"#1c1c2e",padding:"10px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:1,boxShadow:"0 2px 8px rgba(0,0,0,0.4)"}},React.createElement("div",{style:{display:"flex",alignItems:"center",gap:10}},React.createElement("div",{style:{width:28,height:28,borderRadius:5,background:"#8B1A1A",border:"1.5px solid #C9A84C",display:"flex",alignItems:"center",justifyContent:"center"}},React.createElement("span",{style:{color:"#C9A84C",fontWeight:800,fontSize:10,fontFamily:"'Libre Baskerville',serif"}},"KPS")),React.createElement("span",{style:{color:"#fff",fontWeight:600,fontSize:13,fontFamily:"'Libre Baskerville',serif"}},"Deal Report Preview")),React.createElement("div",{style:{display:"flex",gap:10}},React.createElement("button",{onClick:()=>printPdfWindow(pdfData,inputs,analysis,irrA,pair,aiNarrative),style:{padding:"8px 22px",background:"#8B1A1A",border:"2px solid #C9A84C",borderRadius:6,color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer"}},"Print / Save PDF"),React.createElement("button",{onClick:()=>setPdfData(null),style:{padding:"8px 16px",background:"transparent",border:"1px solid #4b5563",borderRadius:6,color:"#9ca3af",fontSize:13,fontWeight:600,cursor:"pointer"}},"Close"))),React.createElement("div",{style:{maxWidth:"210mm",margin:"24px auto",background:"#fff",boxShadow:"0 8px 40px rgba(0,0,0,0.4)"}},rc));})():null;  return React.createElement("div",{style:{minHeight:"100vh",background:"#f0f2f5"}},
     HDR,
     React.createElement("div",{style:{maxWidth:960,margin:"0 auto",padding:"20px 16px"}},content,React.createElement("div",{style:{textAlign:"center",marginTop:24,color:"#cbd5e1",fontSize:11}},"KPS Deal Co-Pilot · Kirtman Property Solutions · For investment analysis purposes only")),
     modal,pdfModal
